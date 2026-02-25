@@ -1,0 +1,59 @@
+id: fhir.demo
+canonical: http://shedija.net
+name: Demo IG
+title: Demo Implementation Guide
+status: draft # draft | active | retired | unknown
+version: 0.1.0
+fhirVersion: 4.0.1 # https://www.hl7.org/fhir/valueset-FHIR-version.html
+copyrightYear: 2025+
+releaseLabel: ci-build
+publisher:
+  name: Demo IG
+  url: http://shedija.net
+  email: gjergj@shedija.net
+
+
+parameters:
+  generate-uml: all
+  generate-schematron: false
+  path-tx-cache:
+  - input-cache
+  usage-stats-opt-out: true
+  excludettl: false
+  excludexml: false
+  excludemap: false  
+  apply-jurisdiction : false
+  path-suppressed-warnings: input/ignoreWarnings.txt
+  logging:
+  - tx
+  - html
+  - init
+  - progress
+  - context 
+  - uml 
+  generate:
+  - json
+  show-inherited-invariants: true
+  tabbed-snapshots: false
+  active-tables: false
+
+menu:
+  Home: index.html
+  Table of Contents: toc.html
+  Artifact Index: artifacts.html
+
+instanceOptions:
+  # When set to true, slices must be referred to by name and not only by a numeric index in order to be used
+  # in an Instance's assignment rule. All slices appear in the order in which they are specified in FSH rules.
+  # While SUSHI defaults to false for legacy reasons, manualSliceOrding is recommended for new projects.
+  manualSliceOrdering: true # true | false
+  # Determines for which types of Instances SUSHI will automatically set meta.profile
+  # if InstanceOf references a profile:
+  #
+  # setMetaProfile: always # always | never | inline-only | standalone-only
+  #
+  #
+  # Determines for which types of Instances SUSHI will automatically set id
+  # if InstanceOf references a profile:
+  #
+  # setId: always # always | standalone-only
