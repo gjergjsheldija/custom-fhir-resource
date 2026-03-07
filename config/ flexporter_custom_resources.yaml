@@ -1,0 +1,97 @@
+applicability:
+  - "Bundle.exists()"
+
+actions:
+  # 1. Create the ResearchStudy (Singleton)
+  - fhirpath: "Bundle.limit(1)"
+    create_resource:
+      - resourceType: ResearchStudy
+        fields:
+          - location: "ResearchStudy.id"
+            value: "example-research-study"
+          - location: "ResearchStudy.status"
+            value: "active"
+          - location: "ResearchStudy.title"
+            value: "Example Research Study"
+          - location: "ResearchStudy.description"
+            value: "A static research study for all Synthea patients."
+          - location: "ResearchStudy.identifier[0].system"
+            value: "http://example.org/researchstudy"
+          - location: "ResearchStudy.identifier[0].value"
+            value: "Study-001"
+
+  # 2. Create the ResearchSubjects (One per Patient)
+  - fhirpath: "Bundle.entry.resource.ofType(Patient)"
+    create_resource:
+      - resourceType: ResearchSubject 
+        fields:
+          - location: "ResearchSubject.status"
+            value: "candidate" 
+          - location: "ResearchSubject.individual.reference"
+            value: $findRef([Patient])
+          - location: "ResearchSubject.study.reference"
+            value:  $findRef([ResearchStudy])
+      
+
+  # 6. Whitelist Resources
+  - keep_resources:
+      - Patient
+      - ResearchStudy    
+      - ResearchSubject                 
+
+  # 7. Apply profiles to the resources
+  - profiles:
+      - applicability: "Bundle.entry.resource.ofType(Patient)"
+        profile: "http://sheldija.net/StructureDefinition/patient"
+
+  # 8. Cleanup Script
+  - execute_script:
+      - function_name: "removeSpecificExtensions"
+        apply_to: "bundle"
+        function: |
+          function removeSpecificExtensions(bundle) {
+            if (!bundle || !Array.isArray(bundle.entry)) return bundle;
+            const removeUrls = [
+              "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race",
+              "http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity",
+              "http://hl7.org/fhir/StructureDefinition/patient-mothersMaidenName",
+              "http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex",
+              "http://hl7.org/fhir/StructureDefinition/patient-birthPlace",
+              "http://synthetichealth.github.io/synthea/disability-adjusted-life-years",
+              "http://synthetichealth.github.io/synthea/quality-adjusted-life-years",
+              "http://hl7.org/fhir/StructureDefinition/geolocation"
+            ];
+            bundle.entry.forEach(entry => {
+              const res = entry.resource;
+              if (res && res.resourceType === 'Patient' && Array.isArray(res.extension)) {
+                res.extension = res.extension.filter(ext => !removeUrls.includes(ext.url));
+              }
+            });
+            return bundle;
+          }
+
+  # 9. Replace POST with PUT
+  - name: "Convert all resources to PUT"
+    execute_script:
+      - function_name: "convertToPut"
+        apply_to: "bundle"
+        function: |
+          function convertToPut(bundle) {
+            if (!bundle || !bundle.entry) return bundle;
+            
+            bundle.entry.forEach(function(entry) {
+              if (entry.resource) {
+                var type = entry.resource.resourceType;
+                var id = entry.resource.id;
+                
+                // Initialize request object if it doesn't exist
+                entry.request = entry.request || {};
+                
+                // Perform the concatenation in JS
+                entry.request.method = "PUT";
+                entry.request.url = type + "/" + id;
+              }
+            });
+            
+            return bundle;
+          }
